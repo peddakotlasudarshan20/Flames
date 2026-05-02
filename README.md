@@ -1,11 +1,11 @@
 # FLAMES AI Compatibility System
 
-A premium MERN + AI compatibility app with a clean FLAMES engine, Groq-powered relationship insights, MongoDB history, animated React UI, Framer Motion transitions, and React Three Fiber visuals.
+An AI-powered compatibility analysis system combining algorithmic FLAMES logic with LLM-based relationship insights, MongoDB history, animated React UI, Framer Motion transitions, and React Three Fiber visuals.
 
 ## Live
 
-- Frontend: https://client-chi-ashen-67.vercel.app
-- Backend: https://server-lilac-xi.vercel.app
+- Frontend: https://flames-ai.vercel.app
+- Backend: https://flames-ai-api.vercel.app
 - GitHub: https://github.com/peddakotlasudarshan20/Flames
 
 ## Stack
@@ -28,7 +28,7 @@ Create `server/.env`:
 
 ```bash
 PORT=5000
-MONGO_URI=your_mongodb_connection_string
+MONGO_URI=mongodb+srv://app_user:secure_password@cluster.mongodb.net/flames-ai?retryWrites=true&w=majority
 GROQ_API_KEY=your_groq_api_key
 CLIENT_URL=http://localhost:5173
 ```
@@ -52,11 +52,14 @@ npm run dev
 ```json
 {
   "name1": "Aarav",
-  "name2": "Meera"
+  "name2": "Meera",
+  "personalityTraits": "Calm, ambitious",
+  "interests": "Music, travel, startups",
+  "communicationStyle": "Direct and expressive"
 }
 ```
 
-Returns the FLAMES result, AI explanation, insight cards, elimination path, and share id.
+Returns the FLAMES base result, relationship type, AI compatibility reasoning, strengths, possible conflicts, advice, insight cards, elimination path, and share id.
 
 ## Deployment
 
