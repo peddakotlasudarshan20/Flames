@@ -11,6 +11,8 @@ const fallbackInsights = {
   Siblings: "This pairing has a familiar, playful dynamic. Expect teasing, protectiveness, and a connection that feels comfortable quickly."
 };
 
+const requiredInsightTitles = ["Chemistry", "Strength", "Watch point"];
+
 function safeJson(text) {
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) return null;
@@ -46,7 +48,7 @@ export async function generateCompatibilityInsights({ name1, name2, result, rema
     const prompt = ChatPromptTemplate.fromMessages([
       [
         "system",
-        "You write concise compatibility readings for a FLAMES app. FLAMES is a playful name-based game, not science. Do not claim certainty, destiny, private facts, or psychological diagnosis. Keep it fun, realistic, warm, and useful. Return only valid JSON."
+        "You write concise compatibility readings for a FLAMES app. FLAMES is a playful name-based game, not science. Do not claim certainty, destiny, private facts, psychological diagnosis, or real-world relationship outcomes. Keep it fun, realistic, warm, and useful. Return only valid JSON."
       ],
       [
         "human",
@@ -73,10 +75,13 @@ Return JSON with this shape:
     if (!parsed?.explanation || !Array.isArray(parsed?.insights)) return fallback(result);
 
     return {
-      explanation: String(parsed.explanation).slice(0, 900),
-      insights: parsed.insights.slice(0, 3).map((item, index) => ({
-        title: String(item.title || ["Chemistry", "Strength", "Watch point"][index]).slice(0, 40),
-        detail: String(item.detail || "").slice(0, 180)
+      explanation: String(parsed.explanation).replace(/\s+/g, " ").trim().slice(0, 900),
+      insights: requiredInsightTitles.map((title, index) => ({
+        title,
+        detail: String(parsed.insights[index]?.detail || fallback(result).insights[index].detail)
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 180)
       }))
     };
   } catch {
