@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #060713;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #060713;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-rendering: geometricPrecision;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  will-change: transform;
+}
+
+.icon-button {
+  display: inline-grid;
+  min-height: 46px;
+  min-width: 46px;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.icon-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(112, 245, 255, 0.45);
+  background: rgba(112, 245, 255, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
