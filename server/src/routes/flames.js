@@ -8,7 +8,10 @@ const router = express.Router();
 
 const payloadSchema = z.object({
   name1: z.string().trim().min(1).max(60),
-  name2: z.string().trim().min(1).max(60)
+  name2: z.string().trim().min(1).max(60),
+  personalityTraits: z.string().trim().max(220).optional().default(""),
+  interests: z.string().trim().max(220).optional().default(""),
+  communicationStyle: z.string().trim().max(160).optional().default("")
 });
 
 function serialize(document) {
@@ -21,13 +24,15 @@ function serialize(document) {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { name1, name2 } = payloadSchema.parse(req.body);
+    const { name1, name2, personalityTraits, interests, communicationStyle } = payloadSchema.parse(req.body);
+    const context = { personalityTraits, interests, communicationStyle };
     const flames = calculateFlames(name1, name2);
-    const ai = await generateCompatibilityInsights({ name1, name2, ...flames });
+    const ai = await generateCompatibilityInsights({ name1, name2, context, ...flames });
 
     const saved = await createResult({
       name1,
       name2,
+      context,
       ...flames,
       ...ai
     });

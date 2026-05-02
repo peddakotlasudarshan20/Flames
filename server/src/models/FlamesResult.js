@@ -12,6 +12,11 @@ const flamesResultSchema = new mongoose.Schema(
   {
     name1: { type: String, required: true, trim: true },
     name2: { type: String, required: true, trim: true },
+    context: {
+      personalityTraits: { type: String, trim: true, default: "" },
+      interests: { type: String, trim: true, default: "" },
+      communicationStyle: { type: String, trim: true, default: "" }
+    },
     result: {
       type: String,
       enum: ["Friends", "Love", "Affection", "Marriage", "Enemies", "Siblings"],
@@ -25,7 +30,12 @@ const flamesResultSchema = new mongoose.Schema(
         index: Number
       }
     ],
+    relationshipType: { type: String, required: true },
     explanation: { type: String, required: true },
+    compatibilityReasoning: { type: String, required: true },
+    strengths: [{ type: String }],
+    possibleConflicts: [{ type: String }],
+    advice: { type: String, required: true },
     insights: [insightSchema]
   },
   { timestamps: true }
