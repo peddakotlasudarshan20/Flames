@@ -4,6 +4,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import morgan from "morgan";
 import flamesRouter from "./routes/flames.js";
+import { clearResults, deleteResult } from "./services/resultStore.js";
 
 const app = express();
 const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173,http://localhost:4173")
@@ -41,11 +42,36 @@ app.use(
 );
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "flames-ai-api" });
+  res.json({ ok: true, service: "flames-api" });
 });
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, service: "flames-ai-api" });
+  res.json({ ok: true, service: "flames-api" });
+});
+
+app.get("/api/debug", (_req, res) => {
+  res.json({
+    mongoUriExists: Boolean(process.env.MONGO_URI)
+  });
+});
+
+app.delete("/api/history/:id", async (req, res, next) => {
+  try {
+    const item = await deleteResult(req.params.id);
+    if (!item) return res.status(404).json({ message: "Result not found" });
+    return res.json({ ok: true, id: req.params.id });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete("/api/history", async (_req, res, next) => {
+  try {
+    const result = await clearResults();
+    return res.json({ ok: true, deletedCount: result.deletedCount || 0 });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use("/api/flames", flamesRouter);
@@ -58,7 +84,8 @@ app.use((error, _req, res, _next) => {
     console.error("Service dependency error", error.message);
   }
   res.status(status).json({
-    message: status === 500 ? "Service temporarily unavailable. Please try again shortly." : error.message
+    error: error.publicMessage || (status === 500 ? "Service temporarily unavailable. Please try again shortly." : error.message),
+    message: error.publicMessage || (status === 500 ? "Service temporarily unavailable. Please try again shortly." : error.message)
   });
 });
 

@@ -26,7 +26,7 @@ export function calculateFlames(name1, name2) {
   for (const char of second) counts.set(char, (counts.get(char) || 0) - 1);
 
   const remainingCount = [...counts.values()].reduce((total, value) => total + Math.abs(value), 0);
-  const count = remainingCount || first.length + second.length;
+  const count = Math.max(remainingCount, 1);
   const letters = ["F", "L", "A", "M", "E", "S"];
   const eliminationSteps = [];
   let index = 0;

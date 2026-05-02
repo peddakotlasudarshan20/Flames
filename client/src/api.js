@@ -17,6 +17,9 @@ async function request(path, options = {}) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (data.error === "Database not connected") {
+      throw new Error("Database connection is warming up. Please retry.");
+    }
     throw new Error(data.message || "Something went wrong");
   }
   return data;
@@ -35,4 +38,16 @@ export function getHistory() {
 
 export function getResult(id) {
   return request(`/api/flames/${id}`);
+}
+
+export function deleteHistoryItem(id) {
+  return request(`/api/history/${id}`, {
+    method: "DELETE"
+  });
+}
+
+export function clearHistory() {
+  return request("/api/history", {
+    method: "DELETE"
+  });
 }

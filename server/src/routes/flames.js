@@ -2,7 +2,7 @@ import express from "express";
 import { z } from "zod";
 import { generateCompatibilityInsights } from "../services/aiInsights.js";
 import { calculateFlames } from "../services/flamesEngine.js";
-import { createResult, findResult, listResults } from "../services/resultStore.js";
+import { clearResults, createResult, deleteResult, findResult, listResults } from "../services/resultStore.js";
 
 const router = express.Router();
 
@@ -27,14 +27,14 @@ router.post("/", async (req, res, next) => {
     const { name1, name2, personalityTraits, interests, communicationStyle } = payloadSchema.parse(req.body);
     const context = { personalityTraits, interests, communicationStyle };
     const flames = calculateFlames(name1, name2);
-    const ai = await generateCompatibilityInsights({ name1, name2, context, ...flames });
+    const generatedInsights = await generateCompatibilityInsights({ name1, name2, context, ...flames });
 
     const saved = await createResult({
       name1,
       name2,
       context,
       ...flames,
-      ...ai
+      ...generatedInsights
     });
 
     res.status(201).json(serialize(saved));
@@ -61,6 +61,25 @@ router.get("/:id", async (req, res, next) => {
     const item = await findResult(req.params.id);
     if (!item) return res.status(404).json({ message: "Result not found" });
     return res.json(serialize(item));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/history/:id", async (req, res, next) => {
+  try {
+    const item = await deleteResult(req.params.id);
+    if (!item) return res.status(404).json({ message: "Result not found" });
+    return res.json({ ok: true, id: req.params.id });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/history", async (_req, res, next) => {
+  try {
+    const result = await clearResults();
+    return res.json({ ok: true, deletedCount: result.deletedCount || 0 });
   } catch (error) {
     next(error);
   }

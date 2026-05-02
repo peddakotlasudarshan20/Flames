@@ -5,9 +5,10 @@ async function requireDatabase() {
   try {
     await connectDatabase();
   } catch (error) {
-    const dbError = new Error("Database is not connected. Configure a valid MongoDB Atlas MONGO_URI.");
+    const dbError = new Error("Database not connected");
     dbError.status = 503;
     dbError.cause = error;
+    dbError.publicMessage = "Database not connected";
     throw dbError;
   }
 }
@@ -29,4 +30,14 @@ export async function listResults() {
 export async function findResult(id) {
   await requireDatabase();
   return FlamesResult.findById(id);
+}
+
+export async function deleteResult(id) {
+  await requireDatabase();
+  return FlamesResult.findByIdAndDelete(id);
+}
+
+export async function clearResults() {
+  await requireDatabase();
+  return FlamesResult.deleteMany({});
 }

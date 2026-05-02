@@ -9,9 +9,10 @@ import {
   Loader2,
   RefreshCw,
   Share2,
-  Sparkles
+  Sparkles,
+  Trash2
 } from "lucide-react";
-import { calculateFlames, getHistory, getResult } from "./api";
+import { calculateFlames, clearHistory, deleteHistoryItem, getHistory, getResult } from "./api";
 import TiltCard from "./components/TiltCard";
 
 const ParticleField = lazy(() => import("./components/ParticleField.jsx"));
@@ -40,6 +41,15 @@ function initials(name) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 export default function App() {
@@ -80,6 +90,35 @@ export default function App() {
     }
   }
 
+  async function handleDeleteHistory(id) {
+    const previous = history;
+    setHistory((items) => items.filter((item) => item._id !== id));
+    if (result?.shareId === id || result?._id === id) setResult(null);
+    try {
+      await deleteHistoryItem(id);
+      setToast("Result deleted");
+      setTimeout(() => setToast(""), 2200);
+    } catch {
+      setHistory(previous);
+      setError("Could not delete the saved result. Please retry.");
+    }
+  }
+
+  async function handleClearHistory() {
+    if (history.length === 0) return;
+    const previous = history;
+    setHistory([]);
+    setResult(null);
+    try {
+      await clearHistory();
+      setToast("History cleared");
+      setTimeout(() => setToast(""), 2200);
+    } catch {
+      setHistory(previous);
+      setError("Could not clear history. Please retry.");
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
@@ -115,13 +154,40 @@ export default function App() {
   }
 
   async function downloadResult() {
-    if (!resultRef.current) return;
-    const canvas = await html2canvas(resultRef.current, {
-      backgroundColor: "#070814",
-      scale: 2
+    if (!result) return;
+    const report = document.createElement("section");
+    report.className = "download-report";
+    report.innerHTML = `
+      <div class="download-report-card">
+        <p class="download-report-kicker">FLAMES Compatibility Report</p>
+        <h1>${escapeHtml(result.name1)} + ${escapeHtml(result.name2)}</h1>
+        <div class="download-report-pill">${escapeHtml(result.relationshipType || result.result)}</div>
+        <p class="download-report-copy">${escapeHtml(result.explanation)}</p>
+        <div class="download-report-grid">
+          <div>
+            <h2>Strengths</h2>
+            <ul>${(result.strengths || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          </div>
+          <div>
+            <h2>Possible conflicts</h2>
+            <ul>${(result.possibleConflicts || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          </div>
+        </div>
+        <div class="download-report-advice">
+          <h2>Advice</h2>
+          <p>${escapeHtml(result.advice)}</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(report);
+    const canvas = await html2canvas(report, {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true
     });
+    report.remove();
     const link = document.createElement("a");
-    link.download = `flames-relationship-report-${result.name1}-${result.name2}.png`.replace(/\s+/g, "-").toLowerCase();
+    link.download = "flames-report.png";
     link.href = canvas.toDataURL("image/png");
     link.click();
   }
@@ -143,17 +209,17 @@ export default function App() {
         >
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm text-cyan-100 shadow-[0_0_40px_rgba(112,245,255,0.12)] backdrop-blur-xl">
             <Sparkles size={16} />
-            FLAMES AI Compatibility System
+            Peddakotla Sudarshan's Flames Compatibility System
           </div>
           <h1 className="max-w-4xl text-balance text-5xl font-black tracking-normal text-white sm:text-6xl lg:text-7xl">
-            Compatibility, calculated with a little cosmic drama.
+            Compatibility insights with a little cosmic drama.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            Enter two names, watch the FLAMES elimination unfold, then get an AI-written compatibility reading that is playful, grounded, and shareable.
+            Enter two names, watch the FLAMES elimination unfold, then get smart insights that feel playful, grounded, and shareable.
           </p>
 
           <div className="mt-8 grid max-w-2xl grid-cols-3 gap-3">
-            {["Animated FLAMES", "Groq AI insights", "Saved history"].map((item) => (
+            {["Animated FLAMES", "Smart insights", "Saved history"].map((item) => (
               <div key={item} className="rounded-lg border border-white/10 bg-white/7 px-3 py-3 text-center text-sm text-slate-200 backdrop-blur-xl">
                 {item}
               </div>
@@ -228,13 +294,21 @@ export default function App() {
             </label>
 
             {error && (
-              <motion.p
+              <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100"
+                className="flex flex-col gap-3 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100 sm:flex-row sm:items-center sm:justify-between"
               >
-                {error}
-              </motion.p>
+                <span>{error}</span>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-200/30 px-3 py-2 font-bold text-red-50 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <RefreshCw size={16} />
+                  Retry
+                </button>
+              </motion.div>
             )}
 
             <button
@@ -380,7 +454,14 @@ export default function App() {
               <History size={18} className="text-cyan-200" />
               <h2 className="text-lg font-bold">Previous results</h2>
             </div>
-            {historyLoading && <Loader2 className="animate-spin text-slate-400" size={18} />}
+            <div className="flex items-center gap-2">
+              {history.length > 0 && (
+                <button onClick={handleClearHistory} className="icon-button compact" aria-label="Clear history" title="Clear history">
+                  <Trash2 size={16} />
+                </button>
+              )}
+              {historyLoading && <Loader2 className="animate-spin text-slate-400" size={18} />}
+            </div>
           </div>
           <div className="space-y-3">
             {history.map((item) => (
@@ -391,7 +472,29 @@ export default function App() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="min-w-0 truncate font-semibold text-white">{item.name1} + {item.name2}</p>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-cyan-100">{item.result}</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-cyan-100">{item.result}</span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleDeleteHistory(item._id);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleDeleteHistory(item._id);
+                        }
+                      }}
+                      className="grid h-8 w-8 place-items-center rounded-xl border border-red-200/20 bg-red-400/10 text-red-100 transition hover:bg-red-400/20"
+                      aria-label="Delete result"
+                      title="Delete result"
+                    >
+                      <Trash2 size={14} />
+                    </span>
+                  </div>
                 </div>
                 <p className="mt-2 text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()}</p>
               </button>

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: flames-ai-api
+    name: flames-api
     env: node
     plan: free
     buildCommand: npm install

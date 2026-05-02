@@ -1,11 +1,11 @@
-# FLAMES AI Compatibility System
+# Peddakotla Sudarshan's Flames Compatibility System
 
-An AI-powered compatibility analysis system combining algorithmic FLAMES logic with LLM-based relationship insights, MongoDB history, animated React UI, Framer Motion transitions, and React Three Fiber visuals.
+A premium compatibility system combining algorithmic FLAMES logic with smart insights, MongoDB history, animated React UI, Framer Motion transitions, and React Three Fiber visuals.
 
 ## Live
 
-- Frontend: https://flames-compatibility-ai.vercel.app
-- Backend: https://flames-ai-api.vercel.app
+- Frontend: https://client-chi-ashen-67.vercel.app
+- Backend: https://server-lilac-xi.vercel.app
 - GitHub: https://github.com/peddakotlasudarshan20/Flames
 
 ## Stack
@@ -16,7 +16,7 @@ An AI-powered compatibility analysis system combining algorithmic FLAMES logic w
 - React Three Fiber / Three.js
 - Node.js + Express
 - MongoDB + Mongoose
-- Groq API through LangChain
+- Groq-powered smart insights through LangChain
 
 ## Local Setup
 
@@ -28,8 +28,8 @@ Create `server/.env`:
 
 ```bash
 PORT=5000
-MONGO_URI=mongodb+srv://app_user:secure_password@cluster0.example.mongodb.net/flames-ai?retryWrites=true&w=majority&appName=Cluster0
-MONGO_DB_NAME=flames-ai
+MONGO_URI=mongodb+srv://app_user:secure_password@cluster0.example.mongodb.net/flames?retryWrites=true&w=majority&appName=Cluster0
+MONGO_DB_NAME=flames
 MONGO_TIMEOUT_MS=10000
 GROQ_API_KEY=your_groq_api_key
 CLIENT_URL=http://localhost:5173
@@ -61,7 +61,7 @@ npm run dev
 }
 ```
 
-Returns the FLAMES base result, relationship type, AI compatibility reasoning, strengths, possible conflicts, advice, insight cards, elimination path, and share id.
+Returns the FLAMES base result, relationship type, compatibility reasoning, strengths, possible conflicts, advice, insight cards, elimination path, and share id.
 
 ## Deployment
 
