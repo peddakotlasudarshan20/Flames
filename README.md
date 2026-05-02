@@ -2,6 +2,12 @@
 
 A premium MERN + AI compatibility app with a clean FLAMES engine, Groq-powered relationship insights, MongoDB history, animated React UI, Framer Motion transitions, and React Three Fiber visuals.
 
+## Live
+
+- Frontend: https://client-chi-ashen-67.vercel.app
+- Backend: https://server-lilac-xi.vercel.app
+- GitHub: https://github.com/peddakotlasudarshan20/Flames
+
 ## Stack
 
 - React + Vite
@@ -57,6 +63,8 @@ Returns the FLAMES result, AI explanation, insight cards, elimination path, and 
 Frontend can deploy to Vercel from `/client`.
 
 Backend can deploy to Render from `/server` using `render.yaml`.
+
+Backend can also deploy to Vercel from `/server` using `server/vercel.json`.
 
 Required production environment variables:
 
