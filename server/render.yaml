@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: flames-ai-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
