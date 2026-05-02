@@ -28,7 +28,9 @@ Create `server/.env`:
 
 ```bash
 PORT=5000
-MONGO_URI=mongodb+srv://app_user:secure_password@cluster.mongodb.net/flames-ai?retryWrites=true&w=majority
+MONGO_URI=mongodb+srv://app_user:secure_password@cluster0.example.mongodb.net/flames-ai?retryWrites=true&w=majority&appName=Cluster0
+MONGO_DB_NAME=flames-ai
+MONGO_TIMEOUT_MS=10000
 GROQ_API_KEY=your_groq_api_key
 CLIENT_URL=http://localhost:5173
 ```
@@ -73,5 +75,7 @@ Required production environment variables:
 
 - `GROQ_API_KEY`
 - `MONGO_URI`
+- `MONGO_DB_NAME`
+- `MONGO_TIMEOUT_MS`
 - `CLIENT_URL`
 - `VITE_API_URL`
