@@ -1,8 +1,8 @@
 import express from "express";
 import { z } from "zod";
-import FlamesResult from "../models/FlamesResult.js";
 import { generateCompatibilityInsights } from "../services/aiInsights.js";
 import { calculateFlames } from "../services/flamesEngine.js";
+import { createResult, findResult, listResults } from "../services/resultStore.js";
 
 const router = express.Router();
 
@@ -25,7 +25,7 @@ router.post("/", async (req, res, next) => {
     const flames = calculateFlames(name1, name2);
     const ai = await generateCompatibilityInsights({ name1, name2, ...flames });
 
-    const saved = await FlamesResult.create({
+    const saved = await createResult({
       name1,
       name2,
       ...flames,
@@ -44,12 +44,7 @@ router.post("/", async (req, res, next) => {
 
 router.get("/history", async (_req, res, next) => {
   try {
-    const items = await FlamesResult.find({})
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .select("name1 name2 result createdAt")
-      .lean();
-
+    const items = await listResults();
     res.json({ items });
   } catch (error) {
     next(error);
@@ -58,7 +53,7 @@ router.get("/history", async (_req, res, next) => {
 
 router.get("/:id", async (req, res, next) => {
   try {
-    const item = await FlamesResult.findById(req.params.id);
+    const item = await findResult(req.params.id);
     if (!item) return res.status(404).json({ message: "Result not found" });
     return res.json(serialize(item));
   } catch (error) {

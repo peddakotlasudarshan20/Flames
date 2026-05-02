@@ -11,9 +11,15 @@ export async function connectDatabase() {
   if (connectionPromise) return connectionPromise;
 
   mongoose.set("strictQuery", true);
-  connectionPromise = mongoose.connect(process.env.MONGO_URI, {
-    dbName: process.env.MONGO_DB_NAME || undefined
-  });
+  connectionPromise = mongoose
+    .connect(process.env.MONGO_URI, {
+      dbName: process.env.MONGO_DB_NAME || undefined,
+      serverSelectionTimeoutMS: Number(process.env.MONGO_TIMEOUT_MS || 2500)
+    })
+    .catch((error) => {
+      connectionPromise = null;
+      throw error;
+    });
 
   return connectionPromise;
 }
