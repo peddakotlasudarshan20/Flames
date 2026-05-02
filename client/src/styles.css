@@ -46,6 +46,29 @@ input {
   background: rgba(112, 245, 255, 0.16);
 }
 
+.report-button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 16px;
+  border: 1px solid rgba(112, 245, 255, 0.28);
+  background: rgba(112, 245, 255, 0.16);
+  padding: 0 1rem;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 800;
+  box-shadow: 0 0 34px rgba(112, 245, 255, 0.12);
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.report-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(112, 245, 255, 0.62);
+  background: rgba(112, 245, 255, 0.24);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

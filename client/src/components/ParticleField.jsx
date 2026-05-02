@@ -6,8 +6,8 @@ import * as THREE from "three";
 function NebulaPoints() {
   const ref = useRef();
   const positions = useMemo(() => {
-    const points = new Float32Array(900 * 3);
-    for (let i = 0; i < 900; i += 1) {
+    const points = new Float32Array(620 * 3);
+    for (let i = 0; i < 620; i += 1) {
       const radius = 2.2 + Math.random() * 4.8;
       const angle = Math.random() * Math.PI * 2;
       const height = (Math.random() - 0.5) * 4;
@@ -29,7 +29,7 @@ function NebulaPoints() {
       <PointMaterial
         transparent
         color="#70f5ff"
-        size={0.018}
+        size={0.02}
         sizeAttenuation
         depthWrite={false}
         blending={THREE.AdditiveBlending}
@@ -66,7 +66,7 @@ export default function ParticleField() {
           <color attach="background" args={["#060713"]} />
           <NebulaPoints />
           <Rings />
-          <Stars radius={80} depth={40} count={700} factor={3} fade speed={0.45} />
+          <Stars radius={80} depth={40} count={420} factor={3} fade speed={0.32} />
         </Suspense>
       </Canvas>
     </div>

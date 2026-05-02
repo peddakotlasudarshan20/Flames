@@ -25,7 +25,13 @@ const resultStyles = {
   Siblings: { accent: "#b69cff", label: "Siblings", copy: "Playful chaos, protective instincts, and familiar comfort." }
 };
 
-const defaultForm = { name1: "", name2: "" };
+const defaultForm = {
+  name1: "",
+  name2: "",
+  personalityTraits: "",
+  interests: "",
+  communicationStyle: ""
+};
 
 function initials(name) {
   return name
@@ -102,7 +108,7 @@ export default function App() {
   async function copySummary() {
     if (!result) return;
     await navigator.clipboard.writeText(
-      `${result.name1} + ${result.name2}: ${result.result}\n${result.explanation}`
+      `${result.name1} + ${result.name2}: ${result.relationshipType || result.result}\n${result.explanation}\n\nStrengths:\n${(result.strengths || []).join("\n")}\n\nAdvice:\n${result.advice || ""}`
     );
     setToast("Result copied");
     setTimeout(() => setToast(""), 2200);
@@ -115,7 +121,7 @@ export default function App() {
       scale: 2
     });
     const link = document.createElement("a");
-    link.download = `flames-${result.name1}-${result.name2}.png`.replace(/\s+/g, "-").toLowerCase();
+    link.download = `flames-relationship-report-${result.name1}-${result.name2}.png`.replace(/\s+/g, "-").toLowerCase();
     link.href = canvas.toDataURL("image/png");
     link.click();
   }
@@ -159,7 +165,7 @@ export default function App() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200">Start match</p>
-              <h2 className="mt-2 text-2xl font-bold text-white">Enter the names</h2>
+              <h2 className="mt-2 text-2xl font-bold text-white">Build the relationship report</h2>
             </div>
 
             <label className="block">
@@ -186,7 +192,50 @@ export default function App() {
               />
             </label>
 
-            {error && <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</p>}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm text-slate-300">Personality traits</span>
+                <input
+                  value={form.personalityTraits}
+                  onChange={(event) => setForm((current) => ({ ...current, personalityTraits: event.target.value }))}
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300 focus:shadow-[0_0_0_4px_rgba(112,245,255,0.12)]"
+                  placeholder="Calm, ambitious"
+                  maxLength={220}
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm text-slate-300">Communication style</span>
+                <input
+                  value={form.communicationStyle}
+                  onChange={(event) => setForm((current) => ({ ...current, communicationStyle: event.target.value }))}
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition focus:border-pink-300 focus:shadow-[0_0_0_4px_rgba(255,95,215,0.12)]"
+                  placeholder="Direct, expressive"
+                  maxLength={160}
+                />
+              </label>
+            </div>
+
+            <label className="block">
+              <span className="text-sm text-slate-300">Shared interests</span>
+              <textarea
+                value={form.interests}
+                onChange={(event) => setForm((current) => ({ ...current, interests: event.target.value }))}
+                className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-300 focus:shadow-[0_0_0_4px_rgba(148,255,184,0.12)]"
+                placeholder="Music, travel, startups, movies"
+                maxLength={220}
+              />
+            </label>
+
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100"
+              >
+                {error}
+              </motion.p>
+            )}
 
             <button
               type="submit"
@@ -241,8 +290,14 @@ export default function App() {
 
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.28em] text-slate-400">Result</p>
-                  <h2 className="mt-2 text-4xl font-black" style={{ color: resultTheme.accent }}>{resultTheme.label}</h2>
+                  <h2 className="mt-2 text-4xl font-black" style={{ color: resultTheme.accent }}>{result.relationshipType || resultTheme.label}</h2>
+                  <p className="mt-2 text-sm uppercase tracking-[0.24em] text-slate-500">FLAMES base: {resultTheme.label}</p>
                   <p className="mt-4 text-lg leading-8 text-slate-200">{result.explanation}</p>
+
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <p className="text-sm font-bold text-white">Compatibility reasoning</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">{result.compatibilityReasoning}</p>
+                  </div>
 
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     {(result.insights || []).map((insight) => (
@@ -251,6 +306,26 @@ export default function App() {
                         <p className="mt-2 text-sm leading-6 text-slate-300">{insight.detail}</p>
                       </div>
                     ))}
+                  </div>
+
+                  <div className="mt-6 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/8 p-4">
+                      <p className="text-sm font-bold text-emerald-100">Strengths</p>
+                      <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+                        {(result.strengths || []).map((item) => <li key={item}>- {item}</li>)}
+                      </ul>
+                    </div>
+                    <div className="rounded-2xl border border-amber-300/20 bg-amber-300/8 p-4">
+                      <p className="text-sm font-bold text-amber-100">Possible conflicts</p>
+                      <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+                        {(result.possibleConflicts || []).map((item) => <li key={item}>- {item}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-300/8 p-4">
+                    <p className="text-sm font-bold text-cyan-100">Advice</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">{result.advice}</p>
                   </div>
 
                   <div className="mt-6">
@@ -277,8 +352,9 @@ export default function App() {
                     <button onClick={copySummary} className="icon-button" aria-label="Copy result" title="Copy result">
                       <Clipboard size={18} />
                     </button>
-                    <button onClick={downloadResult} className="icon-button" aria-label="Download result image" title="Download image">
+                    <button onClick={downloadResult} className="report-button" aria-label="Download relationship report" title="Download report">
                       <Download size={18} />
+                      Download Report
                     </button>
                     <button onClick={() => setResult(null)} className="icon-button" aria-label="New result" title="New result">
                       <RefreshCw size={18} />
