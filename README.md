@@ -4,7 +4,7 @@ An AI-powered compatibility analysis system combining algorithmic FLAMES logic w
 
 ## Live
 
-- Frontend: https://flames-ai.vercel.app
+- Frontend: https://flames-compatibility-ai.vercel.app
 - Backend: https://flames-ai-api.vercel.app
 - GitHub: https://github.com/peddakotlasudarshan20/Flames
 
