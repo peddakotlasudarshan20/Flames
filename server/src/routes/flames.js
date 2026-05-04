@@ -6,12 +6,19 @@ import { clearResults, createResult, deleteResult, findResult, listDeletedResult
 
 const router = express.Router();
 
+function cleanText(value) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 const payloadSchema = z.object({
-  name1: z.string().trim().min(1).max(60),
-  name2: z.string().trim().min(1).max(60),
-  personalityTraits: z.string().trim().max(220).optional().default(""),
-  interests: z.string().trim().max(220).optional().default(""),
-  communicationStyle: z.string().trim().max(160).optional().default("")
+  name1: z.preprocess(cleanText, z.string().min(1).max(60)),
+  name2: z.preprocess(cleanText, z.string().min(1).max(60)),
+  personalityTraits: z.preprocess(cleanText, z.string().max(220)).optional().default(""),
+  interests: z.preprocess(cleanText, z.string().max(220)).optional().default(""),
+  communicationStyle: z.preprocess(cleanText, z.string().max(160)).optional().default("")
 });
 
 function serialize(document) {

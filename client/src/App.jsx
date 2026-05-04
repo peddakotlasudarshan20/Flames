@@ -16,6 +16,7 @@ import { calculateFlames, clearHistory, deleteHistoryItem, getDeletedResults, ge
 import TiltCard from "./components/TiltCard";
 
 const ParticleField = lazy(() => import("./components/ParticleField.jsx"));
+const ChatWidget = lazy(() => import("./components/ChatWidget.jsx"));
 const HISTORY_LIMIT = 10;
 
 const resultStyles = {
@@ -691,6 +692,10 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Suspense fallback={null}>
+        <ChatWidget />
+      </Suspense>
     </main>
   );
 }

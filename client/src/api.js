@@ -1,18 +1,28 @@
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+const REQUEST_TIMEOUT_MS = 15000;
 
 async function request(path, options = {}) {
   let response;
+  const { timeout, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeout || REQUEST_TIMEOUT_MS);
 
   try {
     response = await fetch(`${API_URL}${path}`, {
       headers: {
         "Content-Type": "application/json",
-        ...options.headers
+        ...fetchOptions.headers
       },
-      ...options
+      ...fetchOptions,
+      signal: fetchOptions.signal || controller.signal
     });
-  } catch {
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("The request took too long. Please retry.");
+    }
     throw new Error("Connection issue. Please check the backend URL and try again.");
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 
   const data = await response.json().catch(() => ({}));
@@ -68,5 +78,13 @@ export function restoreHistoryItem(id) {
 export function clearHistory() {
   return request("/api/history", {
     method: "DELETE"
+  });
+}
+
+export function sendChatMessage(message) {
+  return request("/api/chat", {
+    method: "POST",
+    body: JSON.stringify({ message }),
+    timeout: 18000
   });
 }

@@ -95,6 +95,56 @@ input {
   }
 }
 
+.chat-bubble {
+  max-width: min(86%, 420px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 0.8rem 0.95rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.chat-bubble p {
+  margin: 0;
+}
+
+.chat-bubble p + p {
+  margin-top: 0.55rem;
+}
+
+.chat-bubble-user {
+  background: rgba(112, 245, 255, 0.18);
+  color: #effcff;
+}
+
+.chat-bubble-assistant {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d8e5f4;
+}
+
+.typing-indicator::after {
+  display: inline-block;
+  width: 1.2em;
+  content: "";
+  animation: typingDots 1.2s steps(4, end) infinite;
+}
+
+@keyframes typingDots {
+  0% {
+    content: "";
+  }
+  25% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  75%,
+  100% {
+    content: "...";
+  }
+}
+
 .download-report {
   position: fixed;
   left: 0;

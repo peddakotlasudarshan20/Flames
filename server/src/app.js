@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import morgan from "morgan";
+import chatRouter from "./routes/chat.js";
 import flamesRouter from "./routes/flames.js";
 import { clearResults, deleteResult, listDeletedResults, listResults, restoreResult } from "./services/resultStore.js";
 
@@ -31,6 +32,18 @@ app.use(
 );
 app.use(express.json({ limit: "32kb" }));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  res.on("finish", () => {
+    console.log("api_request", {
+      method: req.method,
+      path: req.originalUrl,
+      status: res.statusCode,
+      durationMs: Date.now() - startedAt
+    });
+  });
+  next();
+});
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -104,6 +117,7 @@ app.delete("/api/history", async (_req, res, next) => {
   }
 });
 
+app.use("/api/chat", chatRouter);
 app.use("/api/flames", flamesRouter);
 
 app.use((error, _req, res, _next) => {
