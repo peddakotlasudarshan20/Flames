@@ -2,7 +2,7 @@ import express from "express";
 import { z } from "zod";
 import { generateCompatibilityInsights } from "../services/aiInsights.js";
 import { calculateFlames } from "../services/flamesEngine.js";
-import { clearResults, createResult, deleteResult, findResult, listResults } from "../services/resultStore.js";
+import { clearResults, createResult, deleteResult, findResult, listDeletedResults, listResults, restoreResult } from "../services/resultStore.js";
 
 const router = express.Router();
 
@@ -16,8 +16,9 @@ const payloadSchema = z.object({
 
 function serialize(document) {
   const item = document.toObject ? document.toObject() : document;
+  const { __v, isDeleted, deletedAt, ...safeItem } = item;
   return {
-    ...item,
+    ...safeItem,
     shareId: item._id?.toString()
   };
 }
@@ -41,16 +42,26 @@ router.post("/", async (req, res, next) => {
   } catch (error) {
     if (error instanceof z.ZodError) {
       error.status = 400;
-      error.message = "Please enter two valid names.";
+      error.message = "Invalid input";
+      error.publicMessage = "Invalid input";
     }
     next(error);
   }
 });
 
-router.get("/history", async (_req, res, next) => {
+router.get("/history", async (req, res, next) => {
   try {
-    const items = await listResults();
-    res.json({ items });
+    const result = await listResults(req.query);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/deleted-results", async (req, res, next) => {
+  try {
+    const result = await listDeletedResults(req.query);
+    res.json(result);
   } catch (error) {
     next(error);
   }
@@ -80,6 +91,16 @@ router.delete("/history", async (_req, res, next) => {
   try {
     const result = await clearResults();
     return res.json({ ok: true, deletedCount: result.deletedCount || 0 });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/:id/restore", async (req, res, next) => {
+  try {
+    const item = await restoreResult(req.params.id);
+    if (!item) return res.status(404).json({ message: "Deleted result not found" });
+    return res.json({ ok: true, item: serialize(item) });
   } catch (error) {
     next(error);
   }

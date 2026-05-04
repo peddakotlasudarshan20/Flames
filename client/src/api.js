@@ -32,8 +32,21 @@ export function calculateFlames(payload) {
   });
 }
 
-export function getHistory() {
-  return request("/api/flames/history");
+function toQueryString(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") query.set(key, value);
+  });
+  const queryString = query.toString();
+  return queryString ? `?${queryString}` : "";
+}
+
+export function getHistory(params = {}) {
+  return request(`/api/results${toQueryString(params)}`);
+}
+
+export function getDeletedResults(params = {}) {
+  return request(`/api/deleted-results${toQueryString(params)}`);
 }
 
 export function getResult(id) {
@@ -43,6 +56,12 @@ export function getResult(id) {
 export function deleteHistoryItem(id) {
   return request(`/api/history/${id}`, {
     method: "DELETE"
+  });
+}
+
+export function restoreHistoryItem(id) {
+  return request(`/api/results/${id}/restore`, {
+    method: "PATCH"
   });
 }
 

@@ -75,6 +75,26 @@ input {
   background: rgba(112, 245, 255, 0.24);
 }
 
+.history-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+.history-skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .download-report {
   position: fixed;
   left: 0;

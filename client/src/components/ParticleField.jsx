@@ -1,74 +1,87 @@
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Float, Points, PointMaterial, Stars } from "@react-three/drei";
-import { Suspense, useMemo, useRef } from "react";
-import * as THREE from "three";
-
-function NebulaPoints() {
-  const ref = useRef();
-  const positions = useMemo(() => {
-    const points = new Float32Array(620 * 3);
-    for (let i = 0; i < 620; i += 1) {
-      const radius = 2.2 + Math.random() * 4.8;
-      const angle = Math.random() * Math.PI * 2;
-      const height = (Math.random() - 0.5) * 4;
-      points[i * 3] = Math.cos(angle) * radius;
-      points[i * 3 + 1] = height;
-      points[i * 3 + 2] = Math.sin(angle) * radius;
-    }
-    return points;
-  }, []);
-
-  useFrame((state, delta) => {
-    if (!ref.current) return;
-    ref.current.rotation.y += delta * 0.035;
-    ref.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.18) * 0.05;
-  });
-
-  return (
-    <Points ref={ref} positions={positions} stride={3} frustumCulled>
-      <PointMaterial
-        transparent
-        color="#70f5ff"
-        size={0.02}
-        sizeAttenuation
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-      />
-    </Points>
-  );
-}
-
-function Rings() {
-  const mesh = useRef();
-  useFrame((_, delta) => {
-    if (mesh.current) mesh.current.rotation.z += delta * 0.08;
-  });
-
-  return (
-    <Float speed={1.2} rotationIntensity={0.35} floatIntensity={0.65}>
-      <mesh ref={mesh} position={[0, -0.1, -1.4]} rotation={[1.25, 0.2, 0.4]}>
-        <torusGeometry args={[2.2, 0.01, 16, 180]} />
-        <meshBasicMaterial color="#ff5fd7" transparent opacity={0.48} />
-      </mesh>
-      <mesh position={[0, -0.1, -1.1]} rotation={[1.28, -0.35, -0.2]}>
-        <torusGeometry args={[1.52, 0.008, 16, 160]} />
-        <meshBasicMaterial color="#94ffb8" transparent opacity={0.4} />
-      </mesh>
-    </Float>
-  );
-}
+import { useEffect, useRef } from "react";
 
 export default function ParticleField() {
-  return (
-    <div className="absolute inset-0 -z-10 h-full w-full">
-      <Canvas camera={{ position: [0, 0, 6], fov: 58 }} dpr={[1, 1.6]}>
-        <Suspense fallback={null}>
-          <color attach="background" args={["#060713"]} />
-          <NebulaPoints />
-          <Rings />
-          <Stars radius={80} depth={40} count={420} factor={3} fade speed={0.32} />
-        </Suspense>
-      </Canvas>
-    </div>
-  );
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d", { alpha: true });
+    const particles = Array.from({ length: 120 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      radius: 0.8 + Math.random() * 1.8,
+      speed: 0.08 + Math.random() * 0.24,
+      drift: -0.12 + Math.random() * 0.24,
+      alpha: 0.25 + Math.random() * 0.55
+    }));
+    let frameId;
+    let width = 0;
+    let height = 0;
+
+    function resize() {
+      const scale = Math.min(window.devicePixelRatio || 1, 1.6);
+      width = canvas.offsetWidth;
+      height = canvas.offsetHeight;
+      canvas.width = Math.floor(width * scale);
+      canvas.height = Math.floor(height * scale);
+      context.setTransform(scale, 0, 0, scale, 0, 0);
+    }
+
+    function drawNebula() {
+      const gradient = context.createRadialGradient(width * 0.28, height * 0.22, 0, width * 0.28, height * 0.22, width * 0.5);
+      gradient.addColorStop(0, "rgba(112, 245, 255, 0.18)");
+      gradient.addColorStop(0.48, "rgba(255, 95, 215, 0.08)");
+      gradient.addColorStop(1, "rgba(6, 7, 19, 0)");
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, width, height);
+    }
+
+    function drawRings(time) {
+      context.save();
+      context.translate(width * 0.54, height * 0.48 + Math.sin(time * 0.0012) * 8);
+      context.rotate(time * 0.00008);
+      context.strokeStyle = "rgba(255, 95, 215, 0.34)";
+      context.lineWidth = 1.2;
+      context.beginPath();
+      context.ellipse(0, 0, width * 0.22, height * 0.055, -0.42, 0, Math.PI * 2);
+      context.stroke();
+      context.strokeStyle = "rgba(148, 255, 184, 0.26)";
+      context.beginPath();
+      context.ellipse(0, 0, width * 0.16, height * 0.04, 0.32, 0, Math.PI * 2);
+      context.stroke();
+      context.restore();
+    }
+
+    function render(time) {
+      context.clearRect(0, 0, width, height);
+      drawNebula();
+      drawRings(time);
+
+      for (const particle of particles) {
+        particle.y -= particle.speed / Math.max(height, 1);
+        particle.x += particle.drift / Math.max(width, 1);
+        if (particle.y < -0.05) particle.y = 1.05;
+        if (particle.x < -0.05) particle.x = 1.05;
+        if (particle.x > 1.05) particle.x = -0.05;
+
+        context.beginPath();
+        context.fillStyle = `rgba(226, 252, 255, ${particle.alpha})`;
+        context.arc(particle.x * width, particle.y * height, particle.radius, 0, Math.PI * 2);
+        context.fill();
+      }
+
+      frameId = window.requestAnimationFrame(render);
+    }
+
+    resize();
+    frameId = window.requestAnimationFrame(render);
+    window.addEventListener("resize", resize);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 -z-10 h-full w-full" aria-hidden="true" />;
 }

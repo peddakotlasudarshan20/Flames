@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import html2canvas from "html2canvas";
 import {
   ArrowRight,
   Clipboard,
@@ -10,12 +9,14 @@ import {
   RefreshCw,
   Share2,
   Sparkles,
-  Trash2
+  Trash2,
+  Undo2
 } from "lucide-react";
-import { calculateFlames, clearHistory, deleteHistoryItem, getHistory, getResult } from "./api";
+import { calculateFlames, clearHistory, deleteHistoryItem, getDeletedResults, getHistory, getResult, restoreHistoryItem } from "./api";
 import TiltCard from "./components/TiltCard";
 
 const ParticleField = lazy(() => import("./components/ParticleField.jsx"));
+const HISTORY_LIMIT = 10;
 
 const resultStyles = {
   Friends: { accent: "#70f5ff", label: "Friends", copy: "Easy rhythm, loyal energy, and a bond that feels safe." },
@@ -56,11 +57,22 @@ export default function App() {
   const [form, setForm] = useState(defaultForm);
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
+  const [deletedHistory, setDeletedHistory] = useState([]);
+  const [showDeletedHistory, setShowDeletedHistory] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [deletedHistoryPage, setDeletedHistoryPage] = useState(1);
+  const [deletedHistoryTotalPages, setDeletedHistoryTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [deletedHistoryLoading, setDeletedHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const [deletedHistoryError, setDeletedHistoryError] = useState("");
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const resultRef = useRef(null);
+  const historyDebounceRef = useRef(null);
+  const historyRequestRef = useRef(0);
 
   const resultTheme = useMemo(() => {
     if (!result?.result) return resultStyles.Friends;
@@ -75,19 +87,57 @@ export default function App() {
         .then(setResult)
         .catch(() => setError("Shared result could not be loaded."));
     }
-    loadHistory();
+    loadHistory(1);
   }, []);
 
-  async function loadHistory() {
+  useEffect(() => {
+    return () => {
+      if (historyDebounceRef.current) window.clearTimeout(historyDebounceRef.current);
+    };
+  }, []);
+
+  async function loadHistory(page = historyPage) {
+    const requestId = historyRequestRef.current + 1;
+    historyRequestRef.current = requestId;
     setHistoryLoading(true);
+    setHistoryError("");
     try {
-      const data = await getHistory();
-      setHistory(data.items || []);
-    } catch {
-      setHistory([]);
+      const data = await getHistory({ page, limit: HISTORY_LIMIT });
+      if (historyRequestRef.current !== requestId) return;
+      setHistory(data.data || data.items || []);
+      setHistoryPage(data.page || page);
+      setHistoryTotalPages(data.totalPages || 1);
+    } catch (err) {
+      if (historyRequestRef.current !== requestId) return;
+      setHistoryError(err.message || "Could not load results.");
     } finally {
-      setHistoryLoading(false);
+      if (historyRequestRef.current === requestId) setHistoryLoading(false);
     }
+  }
+
+  async function loadDeletedHistory(page = deletedHistoryPage) {
+    const requestId = historyRequestRef.current + 1;
+    historyRequestRef.current = requestId;
+    setDeletedHistoryLoading(true);
+    setDeletedHistoryError("");
+    try {
+      const data = await getDeletedResults({ page, limit: HISTORY_LIMIT });
+      if (historyRequestRef.current !== requestId) return;
+      setDeletedHistory(data.data || data.items || []);
+      setDeletedHistoryPage(data.page || page);
+      setDeletedHistoryTotalPages(data.totalPages || 1);
+    } catch (err) {
+      if (historyRequestRef.current !== requestId) return;
+      setDeletedHistoryError(err.message || "Could not load deleted results.");
+    } finally {
+      if (historyRequestRef.current === requestId) setDeletedHistoryLoading(false);
+    }
+  }
+
+  async function toggleDeletedHistory() {
+    const nextValue = !showDeletedHistory;
+    setShowDeletedHistory(nextValue);
+    if (nextValue) await loadDeletedHistory(1);
   }
 
   async function handleDeleteHistory(id) {
@@ -96,11 +146,26 @@ export default function App() {
     if (result?.shareId === id || result?._id === id) setResult(null);
     try {
       await deleteHistoryItem(id);
+      if (showDeletedHistory) await loadDeletedHistory(deletedHistoryPage);
       setToast("Result deleted");
       setTimeout(() => setToast(""), 2200);
     } catch {
       setHistory(previous);
       setError("Could not delete the saved result. Please retry.");
+    }
+  }
+
+  async function handleRestoreHistory(id) {
+    const previousDeleted = deletedHistory;
+    setDeletedHistory((items) => items.filter((item) => item._id !== id));
+    try {
+      await restoreHistoryItem(id);
+      await loadHistory(1);
+      setToast("Result restored");
+      setTimeout(() => setToast(""), 2200);
+    } catch {
+      setDeletedHistory(previousDeleted);
+      setError("Could not restore the deleted result. Please retry.");
     }
   }
 
@@ -111,6 +176,9 @@ export default function App() {
     setResult(null);
     try {
       await clearHistory();
+      setHistoryPage(1);
+      setHistoryTotalPages(1);
+      if (showDeletedHistory) await loadDeletedHistory(1);
       setToast("History cleared");
       setTimeout(() => setToast(""), 2200);
     } catch {
@@ -127,7 +195,7 @@ export default function App() {
       const data = await calculateFlames(form);
       setResult(data);
       setForm(defaultForm);
-      await loadHistory();
+      await loadHistory(1);
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 120);
     } catch (err) {
       setError(err.message || "Unable to calculate compatibility.");
@@ -180,6 +248,7 @@ export default function App() {
       </div>
     `;
     document.body.appendChild(report);
+    const { default: html2canvas } = await import("html2canvas");
     const canvas = await html2canvas(report, {
       backgroundColor: null,
       scale: 2,
@@ -190,6 +259,31 @@ export default function App() {
     link.download = "flames-report.png";
     link.href = canvas.toDataURL("image/png");
     link.click();
+  }
+
+  const visibleHistory = showDeletedHistory ? deletedHistory : history;
+  const visiblePage = showDeletedHistory ? deletedHistoryPage : historyPage;
+  const visibleTotalPages = showDeletedHistory ? deletedHistoryTotalPages : historyTotalPages;
+  const visibleHistoryLoading = showDeletedHistory ? deletedHistoryLoading : historyLoading;
+  const visibleHistoryError = showDeletedHistory ? deletedHistoryError : historyError;
+
+  function loadHistoryPage(page) {
+    if (historyDebounceRef.current) window.clearTimeout(historyDebounceRef.current);
+    historyDebounceRef.current = window.setTimeout(() => {
+      if (showDeletedHistory) {
+        loadDeletedHistory(page);
+      } else {
+        loadHistory(page);
+      }
+    }, 300);
+  }
+
+  function retryVisibleHistory() {
+    if (showDeletedHistory) {
+      loadDeletedHistory(deletedHistoryPage);
+    } else {
+      loadHistory(historyPage);
+    }
   }
 
   return (
@@ -455,53 +549,132 @@ export default function App() {
               <h2 className="text-lg font-bold">Previous results</h2>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={toggleDeletedHistory} className="rounded-xl border border-white/10 bg-white/8 px-3 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/12">
+                {showDeletedHistory ? "Active" : "Deleted"}
+              </button>
               {history.length > 0 && (
                 <button onClick={handleClearHistory} className="icon-button compact" aria-label="Clear history" title="Clear history">
                   <Trash2 size={16} />
                 </button>
               )}
-              {historyLoading && <Loader2 className="animate-spin text-slate-400" size={18} />}
+              {(historyLoading || deletedHistoryLoading) && <Loader2 className="animate-spin text-slate-400" size={18} />}
             </div>
           </div>
           <div className="space-y-3">
-            {history.map((item) => (
+            {visibleHistoryError && (
+              <div className="rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-100">
+                <div className="flex items-center justify-between gap-3">
+                  <span>{visibleHistoryError}</span>
+                  <button
+                    type="button"
+                    onClick={retryVisibleHistory}
+                    className="rounded-xl border border-red-200/30 px-3 py-2 text-xs font-bold text-red-50 transition hover:bg-white/10"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            )}
+            {visibleHistory.map((item) => (
               <button
                 key={item._id}
-                onClick={() => getResult(item._id).then(setResult)}
+                onClick={() => {
+                  if (!showDeletedHistory) getResult(item._id).then(setResult);
+                }}
                 className="w-full rounded-2xl border border-white/10 bg-black/20 p-4 text-left transition hover:border-cyan-200/40 hover:bg-white/10"
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="min-w-0 truncate font-semibold text-white">{item.name1} + {item.name2}</p>
                   <div className="flex shrink-0 items-center gap-2">
                     <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-cyan-100">{item.result}</span>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleDeleteHistory(item._id);
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
+                    {!showDeletedHistory && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => {
                           event.stopPropagation();
                           handleDeleteHistory(item._id);
-                        }
-                      }}
-                      className="grid h-8 w-8 place-items-center rounded-xl border border-red-200/20 bg-red-400/10 text-red-100 transition hover:bg-red-400/20"
-                      aria-label="Delete result"
-                      title="Delete result"
-                    >
-                      <Trash2 size={14} />
-                    </span>
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleDeleteHistory(item._id);
+                          }
+                        }}
+                        className="grid h-8 w-8 place-items-center rounded-xl border border-red-200/20 bg-red-400/10 text-red-100 transition hover:bg-red-400/20"
+                        aria-label="Delete result"
+                        title="Delete result"
+                      >
+                        <Trash2 size={14} />
+                      </span>
+                    )}
+                    {showDeletedHistory && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRestoreHistory(item._id);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleRestoreHistory(item._id);
+                          }
+                        }}
+                        className="grid h-8 w-8 place-items-center rounded-xl border border-emerald-200/20 bg-emerald-400/10 text-emerald-100 transition hover:bg-emerald-400/20"
+                        aria-label="Restore result"
+                        title="Restore result"
+                      >
+                        <Undo2 size={14} />
+                      </span>
+                    )}
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()}</p>
+                <p className="mt-2 text-xs text-slate-400">
+                  {showDeletedHistory ? "Deleted " : ""}
+                  {new Date(showDeletedHistory ? item.deletedAt || item.createdAt : item.createdAt).toLocaleString()}
+                </p>
               </button>
             ))}
-            {!historyLoading && history.length === 0 && (
-              <p className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-400">No saved results yet.</p>
+            {visibleHistoryLoading && (
+              <div className="space-y-3" aria-hidden="true">
+                {Array.from({ length: visibleHistory.length > 0 ? 2 : 3 }).map((_, index) => (
+                  <div key={index} className="history-skeleton rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <div className="h-4 w-2/3 rounded-full bg-white/10" />
+                    <div className="mt-4 h-3 w-1/2 rounded-full bg-white/10" />
+                  </div>
+                ))}
+              </div>
             )}
+            {!historyLoading && !deletedHistoryLoading && !visibleHistoryError && visibleHistory.length === 0 && (
+              <p className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-400">
+                {showDeletedHistory ? "No deleted results yet." : "No saved results yet."}
+              </p>
+            )}
+          </div>
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => loadHistoryPage(visiblePage - 1)}
+              disabled={visibleHistoryLoading || visiblePage <= 1}
+              className="rounded-xl border border-white/10 bg-white/8 px-3 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <span className="text-xs font-semibold text-slate-400">
+              Page {visiblePage} of {visibleTotalPages || 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => loadHistoryPage(visiblePage + 1)}
+              disabled={visibleHistoryLoading || visiblePage >= visibleTotalPages}
+              className="rounded-xl border border-white/10 bg-white/8 px-3 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+            </button>
           </div>
         </aside>
       </section>

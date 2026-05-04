@@ -36,9 +36,14 @@ const flamesResultSchema = new mongoose.Schema(
     strengths: [{ type: String }],
     possibleConflicts: [{ type: String }],
     advice: { type: String, required: true },
-    insights: [insightSchema]
+    insights: [insightSchema],
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null }
   },
   { timestamps: true }
 );
+
+flamesResultSchema.index({ isDeleted: 1 });
+flamesResultSchema.index({ isDeleted: 1, createdAt: -1 });
 
 export default mongoose.model("FlamesResult", flamesResultSchema);
