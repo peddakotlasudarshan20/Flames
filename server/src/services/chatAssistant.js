@@ -34,12 +34,17 @@ function cleanMessage(value) {
 }
 
 function cleanOutput(value) {
-  return String(value || "")
+  const cleaned = String(value || "")
     .replace(/<[^>]*>/g, " ")
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
-    .trim()
-    .slice(0, 1400);
+    .trim();
+
+  if (cleaned.length <= 1200) return cleaned;
+
+  const clipped = cleaned.slice(0, 1200);
+  const sentenceEnd = Math.max(clipped.lastIndexOf("."), clipped.lastIndexOf("!"), clipped.lastIndexOf("?"));
+  return `${clipped.slice(0, sentenceEnd > 700 ? sentenceEnd + 1 : 1200).trim()}...`;
 }
 
 async function withTimeout(promise) {
