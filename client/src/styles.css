@@ -104,6 +104,24 @@ input {
   line-height: 1.55;
 }
 
+.chat-panel {
+  background:
+    linear-gradient(180deg, rgba(112, 245, 255, 0.06), transparent 22%),
+    rgba(8, 10, 24, 0.96);
+}
+
+.chat-message-row {
+  display: flex;
+}
+
+.chat-message-row-user {
+  justify-content: flex-end;
+}
+
+.chat-message-row-assistant {
+  justify-content: flex-start;
+}
+
 .chat-bubble p {
   margin: 0;
 }
@@ -120,6 +138,29 @@ input {
 .chat-bubble-assistant {
   background: rgba(255, 255, 255, 0.08);
   color: #d8e5f4;
+}
+
+.chat-bubble-error {
+  border-color: rgba(248, 113, 113, 0.34);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fee2e2;
+}
+
+.chat-message-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+  color: #8fa3bb;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.chat-message-meta span {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.2rem 0.45rem;
 }
 
 .typing-indicator::after {
